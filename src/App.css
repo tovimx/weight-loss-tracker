@@ -128,8 +128,16 @@
   background: #1f2937;
   border-radius: 12px;
   border: 1px solid #374151;
-  padding: 1.5rem;
+  padding: 1rem;
   margin-bottom: 2rem;
+  height: 300px;
+}
+
+@media (min-width: 601px) {
+  .chart-container {
+    height: 400px;
+    padding: 1.5rem;
+  }
 }
 
 .entries-table {
