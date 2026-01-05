@@ -1,0 +1,143 @@
+.date-picker-container {
+  position: relative;
+}
+
+.date-picker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  background: #111827;
+  color: #f3f4f6;
+  cursor: pointer;
+  min-width: 180px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.date-picker-trigger:hover {
+  border-color: #4b5563;
+}
+
+.date-picker-trigger:focus {
+  outline: none;
+  border-color: #4ecdc4;
+  box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1);
+}
+
+.date-picker-trigger svg {
+  margin-left: auto;
+  color: #9ca3af;
+}
+
+.date-picker-popover {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 50;
+  margin-top: 0.5rem;
+}
+
+/* Override react-day-picker styles for dark theme */
+.rdp-root {
+  --rdp-accent-color: #4ecdc4;
+  --rdp-accent-background-color: rgba(78, 205, 196, 0.2);
+  --rdp-day-height: 40px;
+  --rdp-day-width: 40px;
+  --rdp-background-color: #1f2937;
+}
+
+.rdp-root {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 1rem;
+  color: #f3f4f6;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.rdp-month_caption {
+  color: #f3f4f6;
+  font-weight: 600;
+  padding: 0.5rem;
+}
+
+.rdp-weekday {
+  color: #9ca3af;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.rdp-day {
+  border-radius: 8px;
+}
+
+.rdp-day_button {
+  color: #f3f4f6;
+  border-radius: 8px;
+  transition: background 0.2s, color 0.2s;
+  font-size: 0.875rem;
+}
+
+.rdp-day_button:hover:not([disabled]) {
+  background: rgba(78, 205, 196, 0.1);
+}
+
+.rdp-selected .rdp-day_button {
+  background: #4ecdc4 !important;
+  color: #111827 !important;
+  font-weight: 600;
+}
+
+.rdp-today:not(.rdp-selected) .rdp-day_button {
+  border: 2px solid #4ecdc4;
+}
+
+.rdp-disabled .rdp-day_button {
+  color: #4b5563;
+  cursor: not-allowed;
+}
+
+.rdp-outside .rdp-day_button {
+  color: #4b5563;
+}
+
+.rdp-button_previous,
+.rdp-button_next {
+  color: #9ca3af;
+  border-radius: 8px;
+  padding: 0.25rem;
+}
+
+.rdp-button_previous:hover,
+.rdp-button_next:hover {
+  background: rgba(78, 205, 196, 0.1);
+  color: #4ecdc4;
+}
+
+.rdp-chevron {
+  fill: currentColor;
+}
+
+/* Mobile-friendly touch targets */
+@media (max-width: 600px) {
+  .rdp-root {
+    --rdp-day-height: 44px;
+    --rdp-day-width: 44px;
+  }
+
+  .date-picker-popover {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin-top: 0;
+  }
+
+  .date-picker-trigger {
+    min-width: unset;
+    width: 100%;
+  }
+}
