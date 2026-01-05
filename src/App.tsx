@@ -265,7 +265,7 @@ function App() {
                   : null
                 return (
                   <tr key={entry.date}>
-                    <td>{format(parseISO(entry.date), 'MMM d, yyyy')}</td>
+                    <td>{format(parseISO(entry.date), 'MMM d')}</td>
                     <td>{entry.weight} kg</td>
                     <td
                       className={
