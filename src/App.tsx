@@ -95,6 +95,20 @@ function App() {
     return format(date, 'MMM d')
   }
 
+  const daysSinceStart = differenceInDays(new Date(), parseISO(START_DATE))
+
+  const formatElapsedTime = (totalDays: number) => {
+    const months = Math.floor(totalDays / 30)
+    const remainingAfterMonths = totalDays % 30
+    const weeks = Math.floor(remainingAfterMonths / 7)
+    const days = remainingAfterMonths % 7
+
+    if (months > 0) {
+      return weeks > 0 ? `${months}m ${weeks}w` : days > 0 ? `${months}m ${days}d` : `${months}m`
+    }
+    return weeks > 0 ? `${weeks}w ${days}d` : `${days}d`
+  }
+
   const weightLost =
     entries.length >= 2
       ? (entries[0].weight - entries[entries.length - 1].weight).toFixed(1)
@@ -168,6 +182,12 @@ function App() {
               {entries[entries.length - 1]?.weight} kg
             </span>
             <span className="stat-label">Current</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-value">
+              {formatElapsedTime(daysSinceStart)}
+            </span>
+            <span className="stat-label">Time In</span>
           </div>
         </div>
       )}
