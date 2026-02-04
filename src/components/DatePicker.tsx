@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { DayPicker } from 'react-day-picker'
 import { format, parseISO } from 'date-fns'
+import { es } from 'date-fns/locale'
 import 'react-day-picker/style.css'
 import './DatePicker.css'
 
@@ -47,7 +48,7 @@ export function DatePicker({ value, onChange, minDate, maxDate }: DatePickerProp
         className="date-picker-trigger"
         onClick={() => setIsOpen(!isOpen)}
       >
-        {format(selectedDate, 'MMM d, yyyy')}
+        {format(selectedDate, "d 'de' MMM, yyyy", { locale: es })}
         <svg
           width="16"
           height="16"

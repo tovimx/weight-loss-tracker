@@ -10,30 +10,29 @@ import {
   ReferenceLine,
 } from 'recharts'
 import { format, parseISO, differenceInDays } from 'date-fns'
+import { es } from 'date-fns/locale'
 import { useAuth } from './hooks/useAuth'
 import { useWeightEntries } from './hooks/useWeightEntries'
+import { useGoals } from './hooks/useGoals'
 import { DatePicker } from './components/DatePicker'
 import { LoginScreen } from './components/LoginScreen'
+import { GoalSetup } from './components/GoalSetup'
 import './App.css'
-
-const START_DATE = '2026-01-04'
-const END_DATE = '2026-05-04'
-const MAX_WEIGHT = 142
-const MIN_WEIGHT = 115
 
 function App() {
   const { user, loading: authLoading, signInWithGoogle, signOut } = useAuth()
   const { entries, loading: dataLoading, addEntry, removeEntry } = useWeightEntries(user?.uid)
+  const { goals, loading: goalsLoading, saveGoals } = useGoals(user?.uid)
 
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [weight, setWeight] = useState('')
+  const [editingGoals, setEditingGoals] = useState(false)
 
-  // Show login screen if not authenticated
   if (authLoading) {
     return (
       <div className="app loading-screen">
         <div className="loading-spinner" />
-        <p>Loading...</p>
+        <p>Cargando...</p>
       </div>
     )
   }
@@ -42,13 +41,28 @@ function App() {
     return <LoginScreen onSignIn={signInWithGoogle} />
   }
 
+  if (goalsLoading) {
+    return (
+      <div className="app loading-screen">
+        <div className="loading-spinner" />
+        <p>Cargando...</p>
+      </div>
+    )
+  }
+
+  if (!goals) {
+    return <GoalSetup onSave={saveGoals} />
+  }
+
+  const { startDate, targetDate, startWeight, targetWeight } = goals
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!weight || !date) return
 
     const weightNum = parseFloat(weight)
-    if (weightNum < MIN_WEIGHT || weightNum > MAX_WEIGHT) {
-      alert(`Weight must be between ${MIN_WEIGHT} and ${MAX_WEIGHT} kg`)
+    if (weightNum < targetWeight || weightNum > startWeight) {
+      alert(`El peso debe estar entre ${targetWeight} y ${startWeight} kg`)
       return
     }
 
@@ -57,7 +71,7 @@ function App() {
       setWeight('')
     } catch (error) {
       console.error('Failed to save entry:', error)
-      alert('Failed to save entry. Please try again.')
+      alert('No se pudo guardar el registro. Intenta de nuevo.')
     }
   }
 
@@ -66,17 +80,17 @@ function App() {
       await removeEntry(dateToDelete)
     } catch (error) {
       console.error('Failed to delete entry:', error)
-      alert('Failed to delete entry. Please try again.')
+      alert('No se pudo eliminar el registro. Intenta de nuevo.')
     }
   }
 
   const chartData = entries.map((entry) => ({
     ...entry,
-    dateFormatted: format(parseISO(entry.date), 'MMM d'),
-    dayNumber: differenceInDays(parseISO(entry.date), parseISO(START_DATE)),
+    dateFormatted: format(parseISO(entry.date), 'd MMM', { locale: es }),
+    dayNumber: differenceInDays(parseISO(entry.date), parseISO(startDate)),
   }))
 
-  const totalDays = differenceInDays(parseISO(END_DATE), parseISO(START_DATE))
+  const totalDays = differenceInDays(parseISO(targetDate), parseISO(startDate))
 
   const generateTicks = () => {
     const ticks = []
@@ -90,12 +104,12 @@ function App() {
   }
 
   const formatXAxis = (dayNumber: number) => {
-    const date = new Date(parseISO(START_DATE))
+    const date = new Date(parseISO(startDate))
     date.setDate(date.getDate() + dayNumber)
-    return format(date, 'MMM d')
+    return format(date, 'd MMM', { locale: es })
   }
 
-  const daysSinceStart = differenceInDays(new Date(), parseISO(START_DATE))
+  const daysSinceStart = differenceInDays(new Date(), parseISO(startDate))
 
   const formatElapsedTime = (totalDays: number) => {
     const months = Math.floor(totalDays / 30)
@@ -104,9 +118,9 @@ function App() {
     const days = remainingAfterMonths % 7
 
     if (months > 0) {
-      return weeks > 0 ? `${months}m ${weeks}w` : days > 0 ? `${months}m ${days}d` : `${months}m`
+      return weeks > 0 ? `${months}m ${weeks}s` : days > 0 ? `${months}m ${days}d` : `${months}m`
     }
-    return weeks > 0 ? `${weeks}w ${days}d` : `${days}d`
+    return weeks > 0 ? `${weeks}s ${days}d` : `${days}d`
   }
 
   const weightLost =
@@ -118,12 +132,22 @@ function App() {
     <div className="app">
       <header className="header">
         <div className="header-content">
-          <h1>Weight Loss Tracker</h1>
+          <h1>Control de Peso</h1>
           <p className="subtitle">
-            Goal: {MAX_WEIGHT}kg → {MIN_WEIGHT}kg by May 4th, 2026
+            Meta: {startWeight}kg → {targetWeight}kg para el {format(parseISO(targetDate), "d 'de' MMMM, yyyy", { locale: es })}
+            <button
+              className="edit-goals-btn"
+              onClick={() => setEditingGoals(true)}
+              title="Editar metas"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+            </button>
           </p>
         </div>
-        <button className="sign-out-btn" onClick={signOut} title="Sign out">
+        <button className="sign-out-btn" onClick={signOut} title="Cerrar sesión">
           <svg
             width="20"
             height="20"
@@ -139,31 +163,43 @@ function App() {
         </button>
       </header>
 
+      {editingGoals && (
+        <GoalSetup
+          onSave={async (newGoals) => {
+            await saveGoals(newGoals)
+            setEditingGoals(false)
+          }}
+          initialGoals={goals}
+          isEditing
+          onCancel={() => setEditingGoals(false)}
+        />
+      )}
+
       <form onSubmit={handleSubmit} className="form">
         <div className="input-group">
-          <label htmlFor="date">Date</label>
+          <label htmlFor="date">Fecha</label>
           <DatePicker
             value={date}
             onChange={setDate}
-            minDate={START_DATE}
-            maxDate={END_DATE}
+            minDate={startDate}
+            maxDate={targetDate}
           />
         </div>
         <div className="input-group">
-          <label htmlFor="weight">Weight (kg)</label>
+          <label htmlFor="weight">Peso (kg)</label>
           <input
             type="number"
             id="weight"
             value={weight}
             onChange={(e) => setWeight(e.target.value)}
-            placeholder="e.g., 140.5"
+            placeholder="ej. 140.5"
             step="0.1"
-            min={MIN_WEIGHT}
-            max={MAX_WEIGHT}
+            min={targetWeight}
+            max={startWeight}
           />
         </div>
         <button type="submit" className="submit-btn" disabled={dataLoading}>
-          {dataLoading ? 'Saving...' : 'Add Entry'}
+          {dataLoading ? 'Guardando...' : 'Agregar Registro'}
         </button>
       </form>
 
@@ -171,23 +207,23 @@ function App() {
         <div className="stats">
           <div className="stat-card">
             <span className="stat-value">{weightLost} kg</span>
-            <span className="stat-label">Total Lost</span>
+            <span className="stat-label">Total Perdido</span>
           </div>
           <div className="stat-card">
             <span className="stat-value">{entries.length}</span>
-            <span className="stat-label">Entries</span>
+            <span className="stat-label">Registros</span>
           </div>
           <div className="stat-card">
             <span className="stat-value">
               {entries[entries.length - 1]?.weight} kg
             </span>
-            <span className="stat-label">Current</span>
+            <span className="stat-label">Actual</span>
           </div>
           <div className="stat-card">
             <span className="stat-value">
               {formatElapsedTime(daysSinceStart)}
             </span>
-            <span className="stat-label">Time In</span>
+            <span className="stat-label">Tiempo</span>
           </div>
         </div>
       )}
@@ -215,7 +251,7 @@ function App() {
               fontSize={12}
             />
             <YAxis
-              domain={[MIN_WEIGHT, MAX_WEIGHT]}
+              domain={[targetWeight, startWeight]}
               reversed={false}
               stroke="#9ca3af"
               fontSize={12}
@@ -228,15 +264,15 @@ function App() {
                 borderRadius: '8px',
                 color: '#f3f4f6',
               }}
-              formatter={(value) => [`${value} kg`, 'Weight']}
+              formatter={(value) => [`${value} kg`, 'Peso']}
               labelFormatter={(dayNumber) => formatXAxis(dayNumber as number)}
             />
             <ReferenceLine
-              y={MIN_WEIGHT}
+              y={targetWeight}
               stroke="#4ecdc4"
               strokeDasharray="5 5"
               label={{
-                value: 'Goal',
+                value: 'Meta',
                 position: 'right',
                 fill: '#4ecdc4',
                 fontSize: 12,
@@ -266,13 +302,13 @@ function App() {
 
       {entries.length > 0 && (
         <div className="entries-table">
-          <h2>Weight Log</h2>
+          <h2>Registro de Peso</h2>
           <table>
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Weight</th>
-                <th>Change</th>
+                <th>Fecha</th>
+                <th>Peso</th>
+                <th>Cambio</th>
                 <th></th>
               </tr>
             </thead>
@@ -285,7 +321,7 @@ function App() {
                   : null
                 return (
                   <tr key={entry.date}>
-                    <td>{format(parseISO(entry.date), 'MMM d')}</td>
+                    <td>{format(parseISO(entry.date), 'd MMM', { locale: es })}</td>
                     <td>{entry.weight} kg</td>
                     <td
                       className={
@@ -306,7 +342,7 @@ function App() {
                       <button
                         className="delete-btn"
                         onClick={() => handleDelete(entry.date)}
-                        aria-label="Delete entry"
+                        aria-label="Eliminar registro"
                       >
                         ×
                       </button>

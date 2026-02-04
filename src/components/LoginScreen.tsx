@@ -20,27 +20,11 @@ export function LoginScreen({ onSignIn, loading }: LoginScreenProps) {
               <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
             </svg>
           </div>
-          <h1 className="login-title">Weight Loss Tracker</h1>
-          <p className="login-subtitle">Track your progress towards your goal</p>
+          <h1 className="login-title">Control de Peso</h1>
+          <p className="login-subtitle">Registra tu progreso hacia tu meta</p>
         </div>
 
         <div className="login-card">
-          <div className="login-goal">
-            <div className="goal-item">
-              <span className="goal-label">Start</span>
-              <span className="goal-value">142 kg</span>
-            </div>
-            <div className="goal-arrow">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-            </div>
-            <div className="goal-item">
-              <span className="goal-label">Goal</span>
-              <span className="goal-value highlight">115 kg</span>
-            </div>
-          </div>
-
           <button
             className="google-sign-in-btn"
             onClick={onSignIn}
@@ -64,11 +48,11 @@ export function LoginScreen({ onSignIn, loading }: LoginScreenProps) {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            {loading ? 'Signing in...' : 'Sign in with Google'}
+            {loading ? 'Iniciando sesión...' : 'Iniciar sesión con Google'}
           </button>
 
           <p className="login-note">
-            Sign in to sync your data across all your devices
+            Inicia sesión para sincronizar tus datos en todos tus dispositivos
           </p>
         </div>
 
@@ -77,20 +61,20 @@ export function LoginScreen({ onSignIn, loading }: LoginScreenProps) {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
-            <span>Secure</span>
+            <span>Seguro</span>
           </div>
           <div className="feature">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9m-9 9a9 9 0 019-9" />
             </svg>
-            <span>Sync</span>
+            <span>Sincronizar</span>
           </div>
           <div className="feature">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
               <line x1="12" y1="18" x2="12" y2="18" />
             </svg>
-            <span>Mobile</span>
+            <span>Móvil</span>
           </div>
         </div>
       </div>
