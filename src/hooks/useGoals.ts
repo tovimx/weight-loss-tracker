@@ -50,6 +50,9 @@ export function useGoals(userId: string | undefined) {
     async (newGoals: UserGoals) => {
       if (!userId) throw new Error('Not authenticated')
       await saveGoalsService(userId, newGoals)
+      // Set goals locally so we don't depend on the subscription picking it up
+      setGoals(newGoals)
+      setError(null)
     },
     [userId]
   )
