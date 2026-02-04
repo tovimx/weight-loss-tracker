@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore'
+import { doc, setDoc, getDoc, getDocFromServer, onSnapshot } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 
 export interface UserGoals {
@@ -20,10 +20,6 @@ export function subscribeToGoals(
     (snapshot) => {
       if (snapshot.exists()) {
         callback(snapshot.data() as UserGoals)
-      } else if (snapshot.metadata.fromCache) {
-        // Cache is empty (e.g. browser history cleared) — wait for server
-        // to confirm whether goals truly don't exist
-        return
       } else {
         callback(null)
       }
@@ -40,6 +36,12 @@ export function subscribeToGoals(
 export async function getGoals(userId: string): Promise<UserGoals | null> {
   const goalsRef = doc(db, 'users', userId, 'goals', 'current')
   const snapshot = await getDoc(goalsRef)
+  return snapshot.exists() ? (snapshot.data() as UserGoals) : null
+}
+
+export async function getGoalsFromServer(userId: string): Promise<UserGoals | null> {
+  const goalsRef = doc(db, 'users', userId, 'goals', 'current')
+  const snapshot = await getDocFromServer(goalsRef)
   return snapshot.exists() ? (snapshot.data() as UserGoals) : null
 }
 
