@@ -543,6 +543,38 @@ tr:hover {
   width: 100%;
 }
 
+.goal-suggestion {
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: rgba(78, 205, 196, 0.08);
+  border-radius: 8px;
+  border: 1px solid rgba(78, 205, 196, 0.15);
+}
+
+.suggestion-link {
+  background: none;
+  border: none;
+  color: #4ecdc4;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.suggestion-link:hover {
+  color: #6ee7de;
+}
+
+.suggestion-detail {
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
 .cancel-btn {
   padding: 0.75rem 1.5rem;
   font-size: 1rem;

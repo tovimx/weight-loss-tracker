@@ -1,5 +1,7 @@
+import { useMemo } from 'react'
 import { useState } from 'react'
-import { format } from 'date-fns'
+import { addWeeks, format, parseISO } from 'date-fns'
+import { es } from 'date-fns/locale'
 import type { UserGoals } from '../services/goalsService'
 
 interface GoalSetupProps {
@@ -23,6 +25,30 @@ export function GoalSetup({ onSave, initialGoals, isEditing, onCancel }: GoalSet
     initialGoals?.targetDate ?? ''
   )
   const [saving, setSaving] = useState(false)
+
+  const suggestedDate = useMemo(() => {
+    const start = parseFloat(startWeight)
+    const target = parseFloat(targetWeight)
+    if (!start || !target || target >= start || !startDate) return null
+
+    const kgToLose = start - target
+    // Evidence-based: 0.5–1% of body weight per week is safe and sustainable
+    // Using 0.75% as midpoint for the recommendation
+    const weeklyLossRate = start * 0.0075
+    const weeksNeeded = Math.ceil(kgToLose / weeklyLossRate)
+    const suggested = addWeeks(parseISO(startDate), weeksNeeded)
+
+    return {
+      date: format(suggested, 'yyyy-MM-dd'),
+      dateFormatted: format(suggested, "d 'de' MMMM, yyyy", { locale: es }),
+      weeks: weeksNeeded,
+      rateKg: weeklyLossRate.toFixed(2),
+    }
+  }, [startWeight, targetWeight, startDate])
+
+  const applySuggestedDate = () => {
+    if (suggestedDate) setTargetDate(suggestedDate.date)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -123,6 +149,16 @@ export function GoalSetup({ onSave, initialGoals, isEditing, onCancel }: GoalSet
               />
             </div>
           </div>
+
+          {suggestedDate && (
+            <p className="goal-suggestion">
+              Fecha sugerida: <button type="button" className="suggestion-link" onClick={applySuggestedDate}>{suggestedDate.dateFormatted}</button>
+              <br />
+              <span className="suggestion-detail">
+                ~{suggestedDate.rateKg} kg/semana durante {suggestedDate.weeks} semanas (ritmo saludable del 0.5–1% de tu peso corporal por semana)
+              </span>
+            </p>
+          )}
 
           <div className="goal-actions">
             <button type="submit" className="submit-btn" disabled={saving}>
