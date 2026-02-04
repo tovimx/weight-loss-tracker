@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useState } from 'react'
 import { addWeeks, format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -48,6 +48,14 @@ export function GoalSetup({ onSave, initialGoals, isEditing, onCancel }: GoalSet
       rateKg: weeklyRate.toFixed(2),
     }
   }, [startWeight, targetWeight, startDate])
+
+  const [userEditedTargetDate, setUserEditedTargetDate] = useState(!!initialGoals?.targetDate)
+
+  useEffect(() => {
+    if (suggestedDate && !userEditedTargetDate) {
+      setTargetDate(suggestedDate.date)
+    }
+  }, [suggestedDate, userEditedTargetDate])
 
   const applySuggestedDate = () => {
     if (suggestedDate) setTargetDate(suggestedDate.date)
@@ -154,7 +162,10 @@ export function GoalSetup({ onSave, initialGoals, isEditing, onCancel }: GoalSet
                 type="date"
                 id="targetDate"
                 value={targetDate}
-                onChange={(e) => setTargetDate(e.target.value)}
+                onChange={(e) => {
+                  setTargetDate(e.target.value)
+                  setUserEditedTargetDate(true)
+                }}
                 required
               />
             </div>
