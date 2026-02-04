@@ -1,7 +1,8 @@
 import { initializeApp } from 'firebase/app'
 import {
-  getFirestore,
-  enableIndexedDbPersistence,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
 } from 'firebase/firestore'
 import {
   getAuth,
@@ -9,25 +10,18 @@ import {
 } from 'firebase/auth'
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBKx78jGSzXnukNw2AS9ut71qRnhRGSWJg",
-  authDomain: "weight-loss-tracker-f1374.firebaseapp.com",
-  projectId: "weight-loss-tracker-f1374",
-  storageBucket: "weight-loss-tracker-f1374.firebasestorage.app",
-  messagingSenderId: "503867179400",
-  appId: "1:503867179400:web:a0ce5fec3c415ad5443a3d",
-  measurementId: "G-ZQRVWTJNBP"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 }
 
 const app = initializeApp(firebaseConfig)
-export const db = getFirestore(app)
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+})
 export const auth = getAuth(app)
 export const googleProvider = new GoogleAuthProvider()
-
-// Enable offline persistence
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    console.warn('Persistence failed: multiple tabs open')
-  } else if (err.code === 'unimplemented') {
-    console.warn('Persistence not supported by browser')
-  }
-})

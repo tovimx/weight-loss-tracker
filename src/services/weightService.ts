@@ -25,11 +25,6 @@ export function subscribeToWeightEntries(
   return onSnapshot(
     q,
     (snapshot) => {
-      // Skip empty results from cache — wait for server confirmation
-      if (snapshot.empty && snapshot.metadata.fromCache) {
-        return
-      }
-
       const entries: WeightEntry[] = []
       snapshot.forEach((doc) => {
         entries.push(doc.data() as WeightEntry)

@@ -18,12 +18,6 @@ export function subscribeToGoals(
   return onSnapshot(
     goalsRef,
     (snapshot) => {
-      // If the snapshot says "doesn't exist" but it's from cache,
-      // skip it — wait for the server-confirmed result
-      if (!snapshot.exists() && snapshot.metadata.fromCache) {
-        return
-      }
-
       if (snapshot.exists()) {
         callback(snapshot.data() as UserGoals)
       } else {

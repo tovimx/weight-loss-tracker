@@ -9,24 +9,36 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts'
-import { format, parseISO, differenceInDays } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { format, parseISO } from 'date-fns'
 import { useAuth } from './hooks/useAuth'
 import { useWeightEntries } from './hooks/useWeightEntries'
 import { useGoals } from './hooks/useGoals'
+import { useChartData } from './hooks/useChartData'
+import { useToast } from './components/Toast'
 import { DatePicker } from './components/DatePicker'
 import { LoginScreen } from './components/LoginScreen'
 import { GoalSetup } from './components/GoalSetup'
+import { formatElapsedTime, formatDateShort, formatDateLong } from './utils/formatting'
+import { getWeightBounds, isWeightInRange, getGoalDirection } from './utils/validation'
 import './App.css'
 
 function App() {
   const { user, loading: authLoading, signInWithGoogle, signOut } = useAuth()
   const { entries, loading: dataLoading, addEntry, removeEntry } = useWeightEntries(user?.uid)
   const { goals, loading: goalsLoading, error: goalsError, saveGoals } = useGoals(user?.uid)
+  const { showToast } = useToast()
 
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [weight, setWeight] = useState('')
   const [editingGoals, setEditingGoals] = useState(false)
+
+  // Use dummy values for hooks that need goals data — they'll only render when goals exist
+  const safeGoals = goals ?? { startDate: '', targetDate: '', startWeight: 0, targetWeight: 0 }
+  const { chartData, totalDays, ticks, formatXAxis } = useChartData(
+    entries,
+    safeGoals.startDate,
+    safeGoals.targetDate
+  )
 
   if (authLoading) {
     return (
@@ -66,77 +78,38 @@ function App() {
   }
 
   const { startDate, targetDate, startWeight, targetWeight } = goals
+  const direction = getGoalDirection(startWeight, targetWeight)
+  const { min: weightMin, max: weightMax } = getWeightBounds(startWeight, targetWeight)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!weight || !date) return
 
     const weightNum = parseFloat(weight)
-    if (weightNum < targetWeight || weightNum > startWeight) {
-      alert(`El peso debe estar entre ${targetWeight} y ${startWeight} kg`)
+    if (!isWeightInRange(weightNum, startWeight, targetWeight)) {
+      showToast(`El peso debe estar entre ${weightMin} y ${weightMax} kg`)
       return
     }
 
     try {
       await addEntry({ date, weight: weightNum })
       setWeight('')
-    } catch (error) {
-      console.error('Failed to save entry:', error)
-      alert('No se pudo guardar el registro. Intenta de nuevo.')
+    } catch {
+      showToast('No se pudo guardar el registro. Intenta de nuevo.')
     }
   }
 
   const handleDelete = async (dateToDelete: string) => {
     try {
       await removeEntry(dateToDelete)
-    } catch (error) {
-      console.error('Failed to delete entry:', error)
-      alert('No se pudo eliminar el registro. Intenta de nuevo.')
+    } catch {
+      showToast('No se pudo eliminar el registro. Intenta de nuevo.')
     }
   }
 
-  const chartData = entries.map((entry) => ({
-    ...entry,
-    dateFormatted: format(parseISO(entry.date), 'd MMM', { locale: es }),
-    dayNumber: differenceInDays(parseISO(entry.date), parseISO(startDate)),
-  }))
-
-  const totalDays = differenceInDays(parseISO(targetDate), parseISO(startDate))
-
-  const generateTicks = () => {
-    const ticks = []
-    for (let i = 0; i <= totalDays; i += 14) {
-      ticks.push(i)
-    }
-    if (ticks[ticks.length - 1] !== totalDays) {
-      ticks.push(totalDays)
-    }
-    return ticks
-  }
-
-  const formatXAxis = (dayNumber: number) => {
-    const date = new Date(parseISO(startDate))
-    date.setDate(date.getDate() + dayNumber)
-    return format(date, 'd MMM', { locale: es })
-  }
-
-  const daysSinceStart = differenceInDays(new Date(), parseISO(startDate))
-
-  const formatElapsedTime = (totalDays: number) => {
-    const months = Math.floor(totalDays / 30)
-    const remainingAfterMonths = totalDays % 30
-    const weeks = Math.floor(remainingAfterMonths / 7)
-    const days = remainingAfterMonths % 7
-
-    if (months > 0) {
-      return weeks > 0 ? `${months}m ${weeks}s` : days > 0 ? `${months}m ${days}d` : `${months}m`
-    }
-    return weeks > 0 ? `${weeks}s ${days}d` : `${days}d`
-  }
-
-  const weightLost =
+  const weightChange =
     entries.length >= 2
-      ? (entries[0].weight - entries[entries.length - 1].weight).toFixed(1)
+      ? Math.abs(entries[0].weight - entries[entries.length - 1].weight).toFixed(1)
       : null
 
   return (
@@ -145,7 +118,7 @@ function App() {
         <div className="header-content">
           <h1>Control de Peso</h1>
           <p className="subtitle">
-            Meta: {startWeight}kg → {targetWeight}kg para el {format(parseISO(targetDate), "d 'de' MMMM, yyyy", { locale: es })}
+            Meta: {startWeight}kg → {targetWeight}kg para el {formatDateLong(targetDate)}
             <button
               className="edit-goals-btn"
               onClick={() => setEditingGoals(true)}
@@ -205,8 +178,8 @@ function App() {
             onChange={(e) => setWeight(e.target.value)}
             placeholder="ej. 140.5"
             step="0.1"
-            min={targetWeight}
-            max={startWeight}
+            min={weightMin}
+            max={weightMax}
           />
         </div>
         <button type="submit" className="submit-btn" disabled={dataLoading}>
@@ -214,11 +187,11 @@ function App() {
         </button>
       </form>
 
-      {weightLost && (
+      {weightChange && (
         <div className="stats">
           <div className="stat-card">
-            <span className="stat-value">{weightLost} kg</span>
-            <span className="stat-label">Total Perdido</span>
+            <span className="stat-value">{weightChange} kg</span>
+            <span className="stat-label">{direction === 'loss' ? 'Total Perdido' : 'Total Ganado'}</span>
           </div>
           <div className="stat-card">
             <span className="stat-value">{entries.length}</span>
@@ -232,7 +205,7 @@ function App() {
           </div>
           <div className="stat-card">
             <span className="stat-value">
-              {formatElapsedTime(daysSinceStart)}
+              {formatElapsedTime(parseISO(startDate), new Date())}
             </span>
             <span className="stat-label">Tiempo</span>
           </div>
@@ -256,14 +229,13 @@ function App() {
               dataKey="dayNumber"
               type="number"
               domain={[0, totalDays]}
-              ticks={generateTicks()}
+              ticks={ticks}
               tickFormatter={formatXAxis}
               stroke="#9ca3af"
               fontSize={12}
             />
             <YAxis
-              domain={[targetWeight, startWeight]}
-              reversed={false}
+              domain={[weightMin, weightMax]}
               stroke="#9ca3af"
               fontSize={12}
               tickFormatter={(value) => `${value}kg`}
@@ -330,23 +302,28 @@ function App() {
                 const change = prevEntry
                   ? (entry.weight - prevEntry.weight).toFixed(1)
                   : null
+                const changeNum = change ? parseFloat(change) : 0
+                const isPositiveChange =
+                  direction === 'loss' ? changeNum < 0 : changeNum > 0
+                const isNegativeChange =
+                  direction === 'loss' ? changeNum > 0 : changeNum < 0
                 return (
                   <tr key={entry.date}>
-                    <td>{format(parseISO(entry.date), 'd MMM', { locale: es })}</td>
+                    <td>{formatDateShort(entry.date)}</td>
                     <td>{entry.weight} kg</td>
                     <td
                       className={
                         change
-                          ? parseFloat(change) < 0
+                          ? isPositiveChange
                             ? 'positive'
-                            : parseFloat(change) > 0
+                            : isNegativeChange
                               ? 'negative'
                               : ''
                           : ''
                       }
                     >
                       {change
-                        ? `${parseFloat(change) > 0 ? '+' : ''}${change} kg`
+                        ? `${changeNum > 0 ? '+' : ''}${change} kg`
                         : '—'}
                     </td>
                     <td>

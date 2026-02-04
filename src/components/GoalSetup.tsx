@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { addWeeks, format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import type { UserGoals } from '../services/goalsService'
+import { useToast } from './Toast'
 
 interface GoalSetupProps {
   onSave: (goals: UserGoals) => Promise<void>
@@ -12,6 +13,8 @@ interface GoalSetupProps {
 }
 
 export function GoalSetup({ onSave, initialGoals, isEditing, onCancel }: GoalSetupProps) {
+  const { showToast } = useToast()
+
   const [startWeight, setStartWeight] = useState(
     initialGoals?.startWeight?.toString() ?? ''
   )
@@ -29,20 +32,20 @@ export function GoalSetup({ onSave, initialGoals, isEditing, onCancel }: GoalSet
   const suggestedDate = useMemo(() => {
     const start = parseFloat(startWeight)
     const target = parseFloat(targetWeight)
-    if (!start || !target || target >= start || !startDate) return null
+    if (!start || !target || target === start || !startDate) return null
 
-    const kgToLose = start - target
+    const kgToChange = Math.abs(start - target)
     // Evidence-based: 0.5–1% of body weight per week is safe and sustainable
     // Using 0.75% as midpoint for the recommendation
-    const weeklyLossRate = start * 0.0075
-    const weeksNeeded = Math.ceil(kgToLose / weeklyLossRate)
+    const weeklyRate = start * 0.0075
+    const weeksNeeded = Math.ceil(kgToChange / weeklyRate)
     const suggested = addWeeks(parseISO(startDate), weeksNeeded)
 
     return {
       date: format(suggested, 'yyyy-MM-dd'),
       dateFormatted: format(suggested, "d 'de' MMMM, yyyy", { locale: es }),
       weeks: weeksNeeded,
-      rateKg: weeklyLossRate.toFixed(2),
+      rateKg: weeklyRate.toFixed(2),
     }
   }, [startWeight, targetWeight, startDate])
 
@@ -58,13 +61,13 @@ export function GoalSetup({ onSave, initialGoals, isEditing, onCancel }: GoalSet
 
     if (!start || !target || !startDate || !targetDate) return
 
-    if (target >= start) {
-      alert('El peso meta debe ser menor al peso inicial')
+    if (target === start) {
+      showToast('El peso meta debe ser diferente al peso inicial')
       return
     }
 
     if (targetDate <= startDate) {
-      alert('La fecha meta debe ser posterior a la fecha de inicio')
+      showToast('La fecha meta debe ser posterior a la fecha de inicio')
       return
     }
 
@@ -72,11 +75,18 @@ export function GoalSetup({ onSave, initialGoals, isEditing, onCancel }: GoalSet
     try {
       await onSave({ startWeight: start, targetWeight: target, startDate, targetDate })
     } catch {
-      alert('No se pudieron guardar las metas. Intenta de nuevo.')
+      showToast('No se pudieron guardar las metas. Intenta de nuevo.')
     } finally {
       setSaving(false)
     }
   }
+
+  const direction = (() => {
+    const s = parseFloat(startWeight)
+    const t = parseFloat(targetWeight)
+    if (!s || !t || s === t) return null
+    return t < s ? 'loss' : 'gain'
+  })()
 
   return (
     <div className={isEditing ? 'goal-setup-overlay' : 'login-screen'}>
@@ -96,7 +106,7 @@ export function GoalSetup({ onSave, initialGoals, isEditing, onCancel }: GoalSet
               </svg>
             </div>
             <h1 className="login-title">Define tus Metas</h1>
-            <p className="login-subtitle">Configura tu plan de pérdida de peso</p>
+            <p className="login-subtitle">Configura tu plan de control de peso</p>
           </div>
         )}
 
@@ -155,7 +165,10 @@ export function GoalSetup({ onSave, initialGoals, isEditing, onCancel }: GoalSet
               Fecha sugerida: <button type="button" className="suggestion-link" onClick={applySuggestedDate}>{suggestedDate.dateFormatted}</button>
               <br />
               <span className="suggestion-detail">
-                ~{suggestedDate.rateKg} kg/semana durante {suggestedDate.weeks} semanas (ritmo saludable del 0.5–1% de tu peso corporal por semana)
+                ~{suggestedDate.rateKg} kg/semana durante {suggestedDate.weeks} semanas
+                {direction === 'loss'
+                  ? ' (ritmo saludable del 0.5–1% de tu peso corporal por semana)'
+                  : ' (ritmo de ganancia gradual)'}
               </span>
             </p>
           )}
