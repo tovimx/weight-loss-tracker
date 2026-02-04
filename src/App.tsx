@@ -22,7 +22,7 @@ import './App.css'
 function App() {
   const { user, loading: authLoading, signInWithGoogle, signOut } = useAuth()
   const { entries, loading: dataLoading, addEntry, removeEntry } = useWeightEntries(user?.uid)
-  const { goals, loading: goalsLoading, saveGoals } = useGoals(user?.uid)
+  const { goals, loading: goalsLoading, error: goalsError, saveGoals } = useGoals(user?.uid)
 
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [weight, setWeight] = useState('')
@@ -46,6 +46,17 @@ function App() {
       <div className="app loading-screen">
         <div className="loading-spinner" />
         <p>Cargando...</p>
+      </div>
+    )
+  }
+
+  if (goalsError) {
+    return (
+      <div className="app loading-screen">
+        <p>No se pudieron cargar las metas.</p>
+        <button className="submit-btn" onClick={() => window.location.reload()}>
+          Reintentar
+        </button>
       </div>
     )
   }

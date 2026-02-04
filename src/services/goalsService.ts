@@ -1,4 +1,4 @@
-import { doc, setDoc, onSnapshot } from 'firebase/firestore'
+import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 
 export interface UserGoals {
@@ -10,7 +10,8 @@ export interface UserGoals {
 
 export function subscribeToGoals(
   userId: string,
-  callback: (goals: UserGoals | null) => void
+  callback: (goals: UserGoals | null) => void,
+  onError?: (error: Error) => void
 ): () => void {
   const goalsRef = doc(db, 'users', userId, 'goals', 'current')
 
@@ -25,9 +26,17 @@ export function subscribeToGoals(
     },
     (error) => {
       console.error('Error fetching goals:', error)
-      callback(null)
+      if (onError) {
+        onError(error as Error)
+      }
     }
   )
+}
+
+export async function getGoals(userId: string): Promise<UserGoals | null> {
+  const goalsRef = doc(db, 'users', userId, 'goals', 'current')
+  const snapshot = await getDoc(goalsRef)
+  return snapshot.exists() ? (snapshot.data() as UserGoals) : null
 }
 
 export async function saveGoals(
