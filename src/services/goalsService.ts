@@ -20,6 +20,10 @@ export function subscribeToGoals(
     (snapshot) => {
       if (snapshot.exists()) {
         callback(snapshot.data() as UserGoals)
+      } else if (snapshot.metadata.fromCache) {
+        // Cache is empty (e.g. browser history cleared) — wait for server
+        // to confirm whether goals truly don't exist
+        return
       } else {
         callback(null)
       }

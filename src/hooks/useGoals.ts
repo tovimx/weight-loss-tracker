@@ -20,15 +20,18 @@ export function useGoals(userId: string | undefined) {
 
     setLoading(true)
     setError(null)
+    let resolved = false
 
     const unsubscribe = subscribeToGoals(
       userId,
       (newGoals) => {
+        resolved = true
         setGoals(newGoals)
         setLoading(false)
         setError(null)
       },
       (err) => {
+        resolved = true
         // Subscription failed (likely permissions) — fallback to one-time read
         getGoals(userId)
           .then((fetchedGoals) => {
@@ -43,7 +46,28 @@ export function useGoals(userId: string | undefined) {
       }
     )
 
-    return unsubscribe
+    // Safety net: if subscription hasn't resolved (e.g. offline with empty cache),
+    // fall back to a one-time read after a short delay
+    const timeout = setTimeout(() => {
+      if (!resolved) {
+        getGoals(userId)
+          .then((fetchedGoals) => {
+            if (!resolved) {
+              resolved = true
+              setGoals(fetchedGoals)
+              setLoading(false)
+            }
+          })
+          .catch(() => {
+            // One-time read also failed — subscription may still resolve later
+          })
+      }
+    }, 3000)
+
+    return () => {
+      clearTimeout(timeout)
+      unsubscribe()
+    }
   }, [userId])
 
   const saveGoals = useCallback(
