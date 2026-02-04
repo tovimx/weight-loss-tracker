@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { UserGoals } from '../services/goalsService'
 import {
   subscribeToGoals,
-  getGoalsFromServer,
+  getGoals,
   saveGoals as saveGoalsService,
 } from '../services/goalsService'
 
@@ -20,46 +20,23 @@ export function useGoals(userId: string | undefined) {
 
     setLoading(true)
     setError(null)
-    let serverConfirmedNull = false
 
     const unsubscribe = subscribeToGoals(
       userId,
       (newGoals) => {
-        if (newGoals !== null) {
-          // Goals found — trust it whether from cache or server
-          setGoals(newGoals)
-          setLoading(false)
-          setError(null)
-        } else if (serverConfirmedNull) {
-          // Server already confirmed no goals exist (e.g. user deleted them)
-          setGoals(null)
-          setLoading(false)
-        } else {
-          // Subscription says no goals, but this could be a stale/empty cache.
-          // Verify with a forced server read before showing GoalSetup.
-          getGoalsFromServer(userId)
-            .then((serverGoals) => {
-              serverConfirmedNull = serverGoals === null
-              setGoals(serverGoals)
-              setLoading(false)
-            })
-            .catch((fetchErr) => {
-              console.error('Server verification failed:', fetchErr)
-              // If server read fails (offline, etc.), accept the null
-              setGoals(null)
-              setLoading(false)
-            })
-        }
+        setGoals(newGoals)
+        setLoading(false)
+        setError(null)
       },
       (err) => {
-        // Subscription failed (likely permissions) — fallback to server read
-        getGoalsFromServer(userId)
+        // Subscription failed (likely permissions) — fallback to one-time read
+        getGoals(userId)
           .then((fetchedGoals) => {
             setGoals(fetchedGoals)
             setLoading(false)
           })
           .catch((fetchErr) => {
-            console.error('Fallback getGoalsFromServer also failed:', fetchErr)
+            console.error('Fallback getGoals also failed:', fetchErr)
             setError(err)
             setLoading(false)
           })
