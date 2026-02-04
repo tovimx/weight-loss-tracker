@@ -25,6 +25,7 @@ export function subscribeToGoals(
     },
     (error) => {
       console.error('Error fetching goals:', error)
+      callback(null)
     }
   )
 }
